@@ -1,0 +1,206 @@
+<html>
+  <head>
+    <script type="text/javascript">
+      // Your Client ID can be retrieved from your project in the Google
+      // Developer Console, https://console.developers.google.com
+      var CLIENT_ID = '338461059070-dmpj95ihtd81degrc2941hpkacvptje7.apps.googleusercontent.com';
+
+      var SCOPES = ["https://www.googleapis.com/auth/presentations"];
+
+      var presentationId;
+
+      /**
+       * Check if current user has authorized this application.
+       */
+      function checkAuth() {
+        gapi.auth.authorize(
+          {
+            'client_id': CLIENT_ID,
+            'scope': SCOPES.join(' '),
+            'immediate': true
+          }, handleAuthResult);
+      }
+
+      /**
+       * Handle response from authorization server.
+       *
+       * @param {Object} authResult Authorization result.
+       */
+      function handleAuthResult(authResult) {
+        var authorizeDiv = document.getElementById('authorize-div');
+        if (authResult && !authResult.error) {
+          // Hide auth UI, then load client library.
+          authorizeDiv.style.display = 'none';
+          loadSlidesApi();
+        } else {
+          // Show auth UI, allowing the user to initiate authorization by
+          // clicking authorize button.
+          authorizeDiv.style.display = 'inline';
+        }
+      }
+
+      /**
+       * Initiate auth flow in response to user clicking authorize button.
+       *
+       * @param {Event} event Button click event.
+       */
+      function handleAuthClick(event) {
+        gapi.auth.authorize(
+          {client_id: CLIENT_ID, scope: SCOPES, immediate: false},
+          handleAuthResult);
+        return false;
+      }
+
+      /**
+       * Load Slides API client library.
+       */
+      function loadSlidesApi() {
+        gapi.client.load('slides', 'v1').then(function() {
+          console.log("gapi client loaded");
+          var createSlidesDiv = document.getElementById('create-slide-div');
+          createSlidesDiv.style.display = 'inline';
+        });
+      }
+
+      function createSlide() {
+        var title = document.getElementById('slide-name').value;
+        gapi.client.slides.presentations.create({
+          "title":  title,
+        }).then(function(response) {
+          var presentation = response.result;
+          console.log(presentation);
+
+          presentationId = presentation.presentationId;
+          
+          var url = 'https://docs.google.com/presentation/d/' + presentationId;
+          appendPre('Created:');
+          appendPreForLink(url);
+
+          var createSlideDiv = document.getElementById('create-slide-div');
+          createSlideDiv.style.display = 'none';
+          var addPageDiv = document.getElementById('add-image-div');
+          addPageDiv.style.display = 'inline';
+
+        }, function(response) {
+          appendPre('Error: ' + response.result.error.message);
+        });
+      }
+
+      function addPage() {
+        var url = document.getElementById('image-url').value;
+        var pageObjectId = "id" + Math.floor(Math.random()*(100000));
+        var imageObjectId = pageObjectId + "_image";
+        gapi.client.slides.presentations.batchUpdate({
+          "presentationId": presentationId,
+          "requests": [
+            {
+              "createSlide": {
+                "objectId": pageObjectId,
+                "insertionIndex": 1,
+                "slideLayoutReference": {
+                  "predefinedLayout": "BLANK"
+                }
+              }
+            },
+            {
+              "createImage": {
+                "objectId": imageObjectId,
+                "elementProperties": {
+                  "pageObjectId": pageObjectId,
+                  "size": {
+                    "width": {
+                      "magnitude": 3000000, 
+                      "unit": "EMU"
+                    }, 
+                    "height": {
+                      "magnitude": 3000000, 
+                      "unit": "EMU"
+                    }
+                  }
+                },
+                "url": url,
+              }
+            }
+          ]
+        }).then(function(response) {
+          console.log(response);
+          var url = 'https://docs.google.com/presentation/d/' + presentationId + '/edit#slide=id.' + pageObjectId;
+          appendPre('Added:');
+          appendPreForLink(url);
+
+        }, function(response) {
+          appendPre('Error: ' + response.result.error.message);
+        });
+      }
+
+      function createSlideClick() {
+        console.log("createSlideClick");
+
+        createSlide();
+      }
+
+      function addImageClick() {
+        console.log("addImageClick");
+
+        addPage();
+      }
+
+      /**
+       * Append a pre element to the body containing the given message
+       * as its text node.
+       *
+       * @param {string} message Text to be placed in pre element.
+       */
+      function appendPre(message) {
+        var pre = document.getElementById('output');
+        var textContent = document.createTextNode(message + '\n');
+        pre.appendChild(textContent);
+      }
+
+      function appendPreForLink(url) {
+          var pre = document.getElementById('output');
+          var br = document.createElement('br');
+          var a = document.createElement('a'); 
+          a.href = url;
+          a.target = "_blank";
+          a.textContent = url;
+          pre.appendChild(a);
+          pre.appendChild(br);
+      }
+
+    </script>
+    <script src="https://apis.google.com/js/client.js?onload=checkAuth">
+    </script>
+  </head>
+  <body>
+
+    <div id="authorize-div" style="display: none">
+      <h2>Step 1 Authorize</h2>
+      <span>Authorize access to Google Slides API</span>
+      <!--Button for the user to click to initiate auth sequence -->
+      <button id="authorize-button" onclick="handleAuthClick(event)">
+        Authorize
+      </button>
+    </div>
+
+    <hr>
+
+    <div id="create-slide-div" style="display: none">
+      <h2>Step 2 Create Slide</h2>
+      <input type="text" id="slide-name" value="New slide name"></input>
+      <button onclick="createSlideClick(event)">Create slide</button>
+    </div>
+
+    <hr>
+
+    <div id="add-image-div" style="display: none">
+      <h2>Step 3 Add image</h2>
+      <input type="text" id="image-url" value="https://avatars0.githubusercontent.com/u/6329532" style="width: 300px;"></input>
+      <button onclick="addImageClick(event)">Add image</button>
+    </div>
+
+    <hr>
+
+    <pre id="output"></pre>
+  </body>
+</html>
