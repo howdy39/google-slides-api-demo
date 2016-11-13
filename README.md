@@ -1,8 +1,8 @@
-# google-slides-api-demo
-[google slides api demo](https://developers.google.com/slides) demo
-
-## demo page
+## Demo page
 https://howdy39.github.io/google-slides-api-demo/
 
-## article
+## Reference
+https://developers.google.com/slides/
+
+## Article
 作成中
