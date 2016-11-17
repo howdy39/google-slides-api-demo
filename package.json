@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "browser-sync start --port 8000 --server"
+    "start": "browser-sync start --port 8000 --server --startPath docs/"
   },
   "repository": {
     "type": "git",
